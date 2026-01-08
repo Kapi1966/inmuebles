@@ -1,16 +1,14 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
+# CONFIGURACIÓN
 st.set_page_config(page_title="Gestor Inmo Pro", layout="wide")
 
-# 1. CONEXIÓN A LA BASE DE DATOS (Google Sheets)
-# Debes poner la URL de tu hoja de Google Sheets aquí
-url = "https://docs.google.com/spreadsheets/d/1N6trH41YU4Edkvy-9XBWb4Zs7_AO25zKwoLq3hsOqmo/edit?gid=0#gid=0" 
+# SUSTITUYE AQUÍ TU URL DE GOOGLE SHEETS (Asegúrate de que termina en /export?format=csv)
+# Ejemplo: https://docs.google.com/spreadsheets/d/TU_ID/export?format=csv
+SHEET_ID = "1N6trH41YU4Edkvy-9XBWb4Zs7_AO25zKwoLq3hsOqmo"
+url_csv = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv"
 
-conn = st.connection("gsheets", type=GSheetsConnection)
-
-# 2. SEGURIDAD
 if 'autenticado' not in st.session_state:
     st.session_state.autenticado = False
 
@@ -24,13 +22,12 @@ if not st.session_state.autenticado:
 else:
     st.title("🏠 Gestión Inmobiliaria Sincronizada")
 
-    # Leer datos actuales de Google Sheets
+    # LEER DATOS (Sin librerías raras)
     try:
-        df_existente = conn.read(spreadsheet=url)
+        df_existente = pd.read_csv(url_csv)
     except:
-        df_existente = pd.DataFrame()
+        df_existente = pd.DataFrame(columns=["Fecha", "Inmueble", "Referencia", "IBI", "Luz", "Agua"])
 
-    # FORMULARIO DE ALTA
     with st.form("nuevo_piso"):
         st.subheader("Registrar Inmueble")
         col1, col2 = st.columns(2)
@@ -43,30 +40,27 @@ else:
         luz = c2.selectbox("Luz", ["Pendiente", "En trámite", "Completado"])
         agua = c3.selectbox("Agua", ["Pendiente", "En trámite", "Completado"])
         
-        btn = st.form_submit_button("Guardar en la Nube")
+        btn = st.form_submit_button("Guardar Localmente")
 
     if btn:
         if nombre:
-            # Crear nueva fila
-            nueva_fila = pd.DataFrame([{
+            nueva_fila = {
                 "Fecha": pd.Timestamp.now().strftime("%d/%m/%Y"),
                 "Inmueble": nombre,
                 "Referencia": ref,
                 "IBI": ibi,
                 "Luz": luz,
                 "Agua": agua
-            }])
-            
-            # Unir con lo anterior y guardar en Google Sheets
-            df_final = pd.concat([df_existente, nueva_fila], ignore_index=True)
-            conn.update(spreadsheet=url, data=df_final)
-            st.success("✅ Guardado en Google Sheets y actualizado para todos los PCs")
-            st.rerun()
+            }
+            # Nota: Para escribir en Google Sheets con este método sencillo, 
+            # lo ideal es que descargues el CSV modificado.
+            st.session_state.temp_df = pd.concat([df_existente, pd.DataFrame([nueva_fila])], ignore_index=True)
+            st.success("✅ Añadido a la lista visual")
+    
+    st.write("### 📋 Listado Actual")
+    df_mostrar = st.session_state.get('temp_df', df_existente)
+    st.dataframe(df_mostrar, use_container_width=True)
 
-    # MOSTRAR TABLA REAL
-    st.write("### 📋 Listado en Tiempo Real")
-    if not df_existente.empty:
-        st.dataframe(df_existente, use_container_width=True)
-    else:
-        st.info("La base de datos está vacía.")
-
+    # BOTÓN PARA DESCARGAR EL EXCEL ACTUALIZADO
+    csv_data = df_mostrar.to_csv(index=False).encode('utf-8-sig')
+    st.download_button("📥 Descargar Excel con cambios", data=csv_data, file_name="inmuebles_actualizados.csv")
