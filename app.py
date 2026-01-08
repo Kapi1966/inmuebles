@@ -1,61 +1,72 @@
 import streamlit as st
+from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# Configuración de la página
-st.set_page_config(page_title="Gestor Inmobiliario España", layout="wide")
+st.set_page_config(page_title="Gestor Inmo Pro", layout="wide")
 
-st.title("🏠 Panel de Control de Inmuebles")
-st.subheader("Estado de venta, impuestos y suministros")
+# 1. CONEXIÓN A LA BASE DE DATOS (Google Sheets)
+# Debes poner la URL de tu hoja de Google Sheets aquí
+url = "https://docs.google.com/spreadsheets/d/1N6trH41YU4Edkvy-9XBWb4Zs7_AO25zKwoLq3hsOqmo/edit?gid=0#gid=0" 
 
-# Simulamos una base de datos (En el futuro esto conectará con el SQL de antes)
-if 'inmuebles' not in st.session_state:
-    st.session_state.inmuebles = [
-        {
-            "Inmueble": "Ático Gran Vía",
-            "IBI": "✅ Pagado",
-            "C. Energético": "✅ Sí",
-            "Plusvalía": "⚠️ Pendiente Calcular",
-            "Luz (CUPS)": "🔴 Pendiente Cambio",
-            "Agua": "✅ Completado",
-            "Precio": "450.000€"
-        },
-        {
-            "Inmueble": "Piso Calle Mayor",
-            "IBI": "🔴 Pendiente",
-            "C. Energético": "⚠️ Caducado",
-            "Plusvalía": "✅ Calculada",
-            "Luz (CUPS)": "✅ Completado",
-            "Agua": "🔴 Pendiente Cambio",
-            "Precio": "210.000€"
-        }
-    ]
+conn = st.connection("gsheets", type=GSheetsConnection)
 
-# --- BARRA LATERAL: AÑADIR NUEVO ---
-with st.sidebar:
-    st.header("Añadir Nuevo Inmueble")
-    nuevo_nombre = st.text_input("Nombre/Alias")
-    nueva_ref = st.text_input("Referencia Catastral")
-    nuevo_precio = st.number_input("Precio de Venta", min_value=0)
-    if st.button("Registrar Inmueble"):
-        st.success(f"Registrado: {nuevo_nombre}")
+# 2. SEGURIDAD
+if 'autenticado' not in st.session_state:
+    st.session_state.autenticado = False
 
-# --- CUERPO PRINCIPAL: LISTADO ---
-df = pd.DataFrame(st.session_state.inmuebles)
+if not st.session_state.autenticado:
+    st.title("🔐 Acceso")
+    passw = st.text_input("Clave", type="password")
+    if st.button("Entrar"):
+        if passw == "inmo2026":
+            st.session_state.autenticado = True
+            st.rerun()
+else:
+    st.title("🏠 Gestión Inmobiliaria Sincronizada")
 
-# Mostrar tabla con formato
-st.dataframe(df, use_container_width=True)
+    # Leer datos actuales de Google Sheets
+    try:
+        df_existente = conn.read(spreadsheet=url)
+    except:
+        df_existente = pd.DataFrame()
 
-# --- DETALLE OPERATIVO ---
-st.divider()
-col1, col2 = st.columns(2)
+    # FORMULARIO DE ALTA
+    with st.form("nuevo_piso"):
+        st.subheader("Registrar Inmueble")
+        col1, col2 = st.columns(2)
+        nombre = col1.text_input("Nombre/Alias")
+        ref = col2.text_input("Ref. Catastral")
+        
+        st.write("**Estado de Trámites**")
+        c1, c2, c3 = st.columns(3)
+        ibi = c1.selectbox("IBI", ["Pendiente", "Pagado"])
+        luz = c2.selectbox("Luz", ["Pendiente", "En trámite", "Completado"])
+        agua = c3.selectbox("Agua", ["Pendiente", "En trámite", "Completado"])
+        
+        btn = st.form_submit_button("Guardar en la Nube")
 
-with col1:
-    st.info("### 📝 Próximos pasos (Suministros)")
-    st.checkbox("Llamar a Iberdrola/Endesa para cambio de titular")
-    st.checkbox("Solicitar certificado de deuda a la Comunidad")
-    st.checkbox("Enviar lectura del contador de agua")
+    if btn:
+        if nombre:
+            # Crear nueva fila
+            nueva_fila = pd.DataFrame([{
+                "Fecha": pd.Timestamp.now().strftime("%d/%m/%Y"),
+                "Inmueble": nombre,
+                "Referencia": ref,
+                "IBI": ibi,
+                "Luz": luz,
+                "Agua": agua
+            }])
+            
+            # Unir con lo anterior y guardar en Google Sheets
+            df_final = pd.concat([df_existente, nueva_fila], ignore_index=True)
+            conn.update(spreadsheet=url, data=df_final)
+            st.success("✅ Guardado en Google Sheets y actualizado para todos los PCs")
+            st.rerun()
 
-with col2:
-    st.warning("### 💰 Impuestos Críticos")
-    st.write("- **Plusvalía:** Recordar plazo de 30 días tras firma.")
-    st.write("- **IRPF:** Consultar si el vendedor tiene >65 años para exención.")
+    # MOSTRAR TABLA REAL
+    st.write("### 📋 Listado en Tiempo Real")
+    if not df_existente.empty:
+        st.dataframe(df_existente, use_container_width=True)
+    else:
+        st.info("La base de datos está vacía.")
+
