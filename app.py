@@ -11,7 +11,7 @@ SHEET_ID = "1N6trH41YU4Edkvy-9XBWb4Zs7_AO25zKwoLq3hsOqmo"
 URL_LECTURA = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv"
 
 # PEGA AQUÍ LA URL QUE TE DIO GOOGLE APPS SCRIPT (la que termina en /exec)
-URL_ESCRITURA = "TU_URL_DE_APPS_SCRIPT_AQUI"
+URL_ESCRITURA = "https://script.google.com/macros/s/AKfycbxkgTsPGQfruim1tziIAMVEvzMSircMRXk24MxLdKlqPWBOAc3BUd-fq8k84vtaCZ4/exec"
 
 # 3. SEGURIDAD (Login)
 if 'autenticado' not in st.session_state:
@@ -83,3 +83,4 @@ else:
         st.dataframe(df_existente, use_container_width=True)
     else:
         st.info("La hoja de cálculo está vacía o no tiene el formato correcto.")
+
