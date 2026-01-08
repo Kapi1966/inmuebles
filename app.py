@@ -3,7 +3,7 @@ import requests # Añade esto al principio de tu app.py
 # ... (tu código de login y lectura de tabla) ...
 
 # 1. PEGA AQUÍ LA URL QUE COPIASTE DEL PASO ANTERIOR
-URL_SCRIPT = "https://script.google.com/macros/s/AKfycbyChPL3E66Dn4gmWOrBHXgSaY7Px05kzjX_yKXW1ndYC-j9AMFFytl_Gap2-_kxxZxi/exec"
+URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxkgTsPGQfruim1tziIAMVEvzMSircMRXk24MxLdKlqPWBOAc3BUd-fq8k84vtaCZ4/exec"
 
 with st.form("nuevo_piso"):
     st.subheader("Registrar Inmueble")
@@ -35,4 +35,5 @@ with st.form("nuevo_piso"):
                 st.error("Error al conectar con Google")
         else:
             st.warning("El nombre es obligatorio")
+
 
