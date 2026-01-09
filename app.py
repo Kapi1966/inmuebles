@@ -7,7 +7,7 @@ st.set_page_config(page_title="Gestor Inmobiliario Pro", layout="wide")
 # --- CONFIGURACIÓN DE CONEXIONES ---
 SHEET_ID = "1N6trH41YU4Edkvy-9XBWb4Zs7_AO25zKwoLq3hsOqmo"
 URL_LECTURA = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv"
-URL_ESCRITURA = "TU_NUEVA_URL_DE_APPS_SCRIPT_AQUI" 
+URL_ESCRITURA = "https://script.google.com/macros/s/AKfycbyndiXJR1Lc4sf-Ighx-n9jz81TOFReIDVn65Y0I3TNHpqKsmdnH6fchznAavdHEYln5w/exec" 
 
 # --- SEGURIDAD ---
 if 'autenticado' not in st.session_state:
@@ -88,4 +88,5 @@ else:
                 requests.post(URL_ESCRITURA, json=p)
                 st.rerun()
             st.divider()
+
 
